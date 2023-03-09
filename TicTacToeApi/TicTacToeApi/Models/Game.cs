@@ -3,7 +3,7 @@
     public class Game : BaseModel
     {
         public string Board { get; private set; } = ".........";
-        public string Status { get; private set; } = "In process.";
+        public string Status { get; private set; } = "Game in process. First player's turn.";
         public char Turn { get; private set; } = 'X';
         public Player Player1 { get; private set; }
         public Player Player2 { get; private set; }
@@ -16,7 +16,7 @@
 
         public string DoMove(Move move)
         {
-            if (Status != "In process.") return Status;
+            if (!Status.Contains("in process.")) return Status;
             updateBoard(move);
             updateStatus();
             updateTurn();
@@ -40,6 +40,7 @@
         private void updateTurn()
         {
             Turn = Turn == 'X' ? 'O' : 'X';
+            Status = Turn == 'X' ? "Game in process. First player's turn." : "Game in process. Second player's turn.";
         }
 
         private bool checkWinner(char ch)

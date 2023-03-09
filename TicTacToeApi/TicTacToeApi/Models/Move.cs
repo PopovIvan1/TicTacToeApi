@@ -10,9 +10,15 @@
         public Move(char val, int column, int row, Player player, Game game)
         {
             Val = val;
-            Position = (row - 1) * 3 + column - 1;
+            convertPosition(column, row);
             Player = player;
             Game = game;
+        }
+
+        private void convertPosition(int column, int row)
+        {
+            if (column > 3 || row > 3 || column < 1 || row < 1) Position = -1;
+            else Position = (row - 1) * 3 + column - 1;
         }
     }
 }
