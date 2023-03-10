@@ -1,88 +1,112 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TicTacToeApi.DataBases;
 using TicTacToeApi.Models;
-using TicTacToeApi.Repositories;
 
 namespace TicTacToeApi.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/")]
     public class GameController : ControllerBase
     {
-        private IRepository<Game> games { get; set; }
-        private IRepository<Move> moves { get; set; }
-        private IRepository<Player> players { get; set; }
+        private ApplicationContext context;
 
         public GameController(ApplicationContext context)
         {
-            games = new Repository<Game>(context);
-            moves = new Repository<Move>(context);
-            players = new Repository<Player>(context);
+            this.context = context;
         }
 
         [HttpGet]
+        [Route("AllGames")]
         public JsonResult GetAllGames()
         {
-            return new JsonResult(games.GetAll());
+            return new JsonResult(context.Games.Include(g => g.Player1)
+            .Include(g => g.Player2).Select(g => g));
         }
 
-        [HttpPost]
-        public JsonResult GetGame(int id)
+        [HttpGet]
+        [Route("GetGame")]
+        public async Task<JsonResult> GetGameAsync(int id)
         {
-            var game = games.Get(id);
+            var game = await context.Games.Include(g => g.Player1)
+                .Include(g => g.Player2).FirstOrDefaultAsync(g => g.Id == id);
             if (game == null) return new JsonResult("The game doesn't exist.");
             return new JsonResult(game);
         }
 
         [HttpPost]
-        public JsonResult NewGame(string name1, string name2)
+        [Route("NewGame")]
+        public async Task<JsonResult> NewGameAsync(string name1, string name2)
         {
-            var player1 = players.GetAll().FirstOrDefault(p => p.Name == name1);
-            var player2 = players.GetAll().FirstOrDefault(p => p.Name == name2);
+            var player1 = await context.Players.FirstOrDefaultAsync(p => p.Name == name1);
+            var player2 = await context.Players.FirstOrDefaultAsync(p => p.Name == name2);
             if (name1 == name2 || player1 == null || player2 == null) return new JsonResult("Invalid parameters.");
-            var game = new Game(player1, player2);
-            games.Create(game);
+            var game = new Game() { Player1 = player1, Player2 = player2 };
+            context.Games.Add(game);
+            context.SaveChanges();
             return new JsonResult(game);
         }
 
         [HttpPost]
-        public JsonResult GetGameBoard(int id)
+        [Route("NewPlayer")]
+        public async Task<JsonResult> NewPalyerAsync(string name)
         {
-            var game = games.Get(id);
-            if (game == null) return new JsonResult("The game doesn't exist.");
-            return new JsonResult(game.Board);
-        }
-
-        [HttpPost]
-        public JsonResult NewPalyer(string name)
-        {
-            if (players.GetAll().FirstOrDefault(p => p.Name == name) != null)
+            if (await context.Players.FirstOrDefaultAsync(p => p.Name == name) != null)
                 return new JsonResult("This username is already taken.");
             var player = new Player(name);
-            players.Create(player);
+            context.Players.Add(player);
+            context.SaveChanges();
             return new JsonResult(player);
         }
 
-        [HttpPost]
-        public JsonResult GetPlayer(int id)
+        [HttpGet]
+        [Route("Player")]
+        public async Task<JsonResult> GetPlayerAsync(int id)
         {
-            var player = players.Get(id);
+            var player = await context.Players.FirstOrDefaultAsync(p => p.Id == id);
             if (player == null) return new JsonResult("The player doesn't exist.");
             return new JsonResult(player);
         }
 
         [HttpPost]
-        public JsonResult DoMove(string playerName, char moveType, int gameId, int column, int row)
+        [Route("DoMove")]
+        public async Task<JsonResult> DoMoveAsync(string playerName, char moveType, int gameId, int column, int row)
         {
-            var game = games.Get(gameId);
+            var game = await context.Games.Include(g => g.Player1)
+                .Include(g => g.Player2).FirstOrDefaultAsync(g => g.Id == gameId);
             if (game == null) return new JsonResult("The game doesn't exist.");
-            var player = players.GetAll().FirstOrDefault(p => p.Name == playerName);
+            var player = await context.Players.FirstOrDefaultAsync(p => p.Name == playerName);
             if (player == null) return new JsonResult("The player doesn't exist.");
             Move move = new Move(moveType, column, row, player, game);
             if (!checkTurn(move)) return new JsonResult("Wrong turn.");
-            moves.Create(move);
             game.DoMove(move);
-            return new JsonResult(game.Status);
+            context.SaveChanges();
+            return new JsonResult(new[] { game.Status, game.Board });
+        }
+
+        [HttpDelete]
+        [Route("DeletePlayer")]
+        public async Task<JsonResult> DeletePlayerAsync(int id)
+        {
+            var player = await context.Players.FirstOrDefaultAsync(p => p.Id == id);
+            if (player == null) return new JsonResult("The player doesn't exist.");
+            if (await context.Games.FirstOrDefaultAsync(g => g.Player1 == player || g.Player2 == player) != null)
+            {
+                return new JsonResult("Unable to delete this player.");
+            }
+            context.SaveChanges();
+            return new JsonResult("Player has deleted.");
+        }
+
+        [HttpDelete]
+        [Route("DeleteGame")]
+        public async Task<JsonResult> DeleteGameAsync(int id)
+        {
+            var game = await context.Games.FirstOrDefaultAsync(g => g.Id == id);
+            if (game == null) return new JsonResult("The game doesn't exist.");
+            context.Games.Remove(game);
+            context.SaveChanges();
+            return new JsonResult("The game has deleted.");
         }
 
         private bool checkTurn(Move move)

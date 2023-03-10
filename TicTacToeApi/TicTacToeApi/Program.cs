@@ -1,3 +1,8 @@
+using Microsoft.EntityFrameworkCore;
+using System.Reflection.Metadata;
+using TicTacToeApi.DataBases;
+using TicTacToeApi.Models;
+
 namespace TicTacToeApi
 {
     public class Program
@@ -7,7 +12,9 @@ namespace TicTacToeApi
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
-
+            var connectionString = builder.Configuration.GetConnectionString("DbConnection");
+            builder.Services.AddDbContext<ApplicationContext>(options =>
+                options.UseSqlServer(connectionString));
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
@@ -24,7 +31,11 @@ namespace TicTacToeApi
 
             app.UseHttpsRedirection();
 
+            app.UseRouting();
+
             app.UseAuthorization();
+
+            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
 
 
             app.MapControllers();

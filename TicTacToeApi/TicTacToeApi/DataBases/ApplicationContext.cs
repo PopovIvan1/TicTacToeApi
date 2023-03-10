@@ -7,7 +7,6 @@ namespace TicTacToeApi.DataBases
     {
         public DbSet<Game> Games { get; set; }
         public DbSet<Player> Players { get; set; }
-        public DbSet<Move> Moves { get; set; }
 
         public ApplicationContext(DbContextOptions<ApplicationContext> options) : base(options)
         {
