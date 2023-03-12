@@ -1,7 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Metadata;
 using TicTacToeApi.DataBases;
-using TicTacToeApi.Models;
 
 namespace TicTacToeApi
 {
@@ -12,7 +10,7 @@ namespace TicTacToeApi
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
-            var connectionString = builder.Configuration.GetConnectionString("DbConnection");
+            var connectionString = builder.Configuration.GetConnectionString("TicTacDbConnection");
             builder.Services.AddDbContext<ApplicationContext>(options =>
                 options.UseSqlServer(connectionString));
             builder.Services.AddControllers();

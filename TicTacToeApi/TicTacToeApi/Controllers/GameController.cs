@@ -81,7 +81,7 @@ namespace TicTacToeApi.Controllers
             if (!checkTurn(move)) return new JsonResult("Wrong turn.");
             game.DoMove(move);
             context.SaveChanges();
-            return new JsonResult(new[] { game.Status, game.Board });
+            return new JsonResult(game);
         }
 
         [HttpDelete]
@@ -111,9 +111,10 @@ namespace TicTacToeApi.Controllers
 
         private bool checkTurn(Move move)
         {
-            if (move.Position < 0 || move.Val != move.Game.Turn) return false;
+            if (move.Column < 0 || move.Val != move.Game.Turn) return false;
             if (!checkPlayer(move)) return false;
-            if (move.Game.Board[move.Position] != '.') return false;
+            var board = new[] { move.Game.Row1, move.Game.Row2, move.Game.Row3 };
+            if (board[move.Row][move.Column] != '.') return false;
             return true;
         }
 

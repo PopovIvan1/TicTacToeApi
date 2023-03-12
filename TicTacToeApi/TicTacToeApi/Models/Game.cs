@@ -1,8 +1,12 @@
-﻿namespace TicTacToeApi.Models
+﻿using System.Linq;
+
+namespace TicTacToeApi.Models
 {
     public class Game : BaseModel
     {
-        public string Board { get; private set; } = ".........";
+        public string Row1 { get; private set; } = "...";
+        public string Row2 { get; private set; } = "...";
+        public string Row3 { get; private set; } = "...";
         public string Status { get; private set; } = "Game in process. First player's turn.";
         public char Turn { get; private set; } = 'X';
         public Player? Player1 { get; set; }
@@ -19,9 +23,10 @@
 
         private void updateBoard(Move move)
         {
-            char[] boardToArray = Board.ToCharArray();
-            boardToArray[move.Position] = move.Val;
-            Board = string.Concat(boardToArray);
+            var board = new[] { Row1, Row2, Row3 };
+            char[] boardToArray = board[move.Row].ToCharArray();
+            boardToArray[move.Column] = move.Val;
+            board[move.Row] = string.Concat(boardToArray);
         }
 
         private void updateStatus()
@@ -39,16 +44,18 @@
 
         private bool checkWinner(char ch)
         {
+            var board = new[] { Row1, Row2, Row3 };
             return Enumerable.Range(0, 2).Any(i =>
-            Board[i] == ch && Board[i + 3] == ch && Board[i + 6] == ch ||
-            Board[i * 3] == ch && Board[i * 3 + 1] == ch && Board[i * 3 + 2] == ch)
-                || Board[0] == ch && Board[4] == ch && Board[8] == ch
-                || Board[2] == ch && Board[4] == ch && Board[6] == ch;
+            Enumerable.Range(0, 2).All(j => board[i][j] == ch) ||
+            Enumerable.Range(0, 2).All(j => board[j][i] == ch)) || 
+            Enumerable.Range(0, 2).All(i => board[i][i] == ch) ||
+            Enumerable.Range(0, 2).All(i => board[i][2 - i] == ch);
         }
         
         private bool checkDraw()
         {
-            return Board.Contains('.');
+            var board = new[] {Row1, Row2, Row3};
+            return string.Concat(board).Contains('.');
         }
     }
 }
